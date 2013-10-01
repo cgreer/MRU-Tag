@@ -1,8 +1,0 @@
-def __init__(self, name, fileName, lineNumber, columnNumber):	/home/chris/dotfiles/_vim/bundle/mrufunction/plugin/recentfxn.py	15	24
-def get_mru_fxn_list(mrufxndata):	/home/chris/dotfiles/_vim/bundle/mrufunction/plugin/recentfxn.py	5	39
-def get_mru_fxn_list(mrufxndata):	/home/chris/dotfiles/_vim/bundle/cgCustom/plugin/recentfxn.py	55	17
-def __init__(self):	/home/chris/dotfiles/_vim/bundle/cgCustom/plugin/recentfxn.py	17	14
-def output_mru_list(self):	/home/chris/dotfiles/_vim/bundle/cgCustom/plugin/recentfxn.py	34	28
-def word_colocations(numWords, fileName):	/home/chris/Dropbox/projects/friends_dialogue/process.py	33	19
-def __init__(self, name, fileName, lineNumber, columnNumber):	/home/chris/dotfiles/_vim/bundle/cgCustom/plugin/recentfxn.py	11	40
-def .*(.*):	/home/chris/dotfiles/_vim/bundle/cgCustom/plugin/recentfxn.vim	26	59
