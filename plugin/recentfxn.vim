@@ -1,6 +1,4 @@
-
 let g:pluginHome = expand("<sfile>:p:h")
-echom "plugin directory" . g:pluginHome
 
 
 function! StoreTraversedFunctionInfo()
