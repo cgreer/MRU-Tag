@@ -10,5 +10,6 @@ Install using Pathogen. Just clone this repo into your "bundle" directory.
 ## Todo/Issues
 - Check if function exists/was moved
 - Write better function to find which function the cursor is in for Python.  Current function is naive and a stand-in to see if an MRU Function plugin is useful
-- Include class name next to function location display in MRU Function Window.  If you have many __init__'s or similar inherited function/object names it is hard to differentiate which one is which
+- Include class name next to function location display in MRU Function Window.  If you have many \__init__'s or similar inherited function/object names it is hard to differentiate which one is which
+- Update to work for js and other languages
 
