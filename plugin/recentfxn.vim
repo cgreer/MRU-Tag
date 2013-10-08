@@ -1,36 +1,14 @@
 
 let g:pluginHome = expand("<sfile>:p:h")
-echom "plugin directory" . g:pluginHome
 
+function! LogTagLocationInfo()
 
-function! StoreTraversedFunctionInfo()
-    
-    " note the expand for a filename @i @priming @example
-    " let currentFN = expand("%:p")
+    " test
+    let logcmd = g:pluginHome . "/recentfxn.py " . "log " . expand("%:p") . " " . line(".") . " " . col(".")
+    echom logcmd
+    let err = system(logcmd)
+    echom "err" . err
 
-    " execute commands in functions @i
-    " set mark to go back to after parsing function name
-    execute "normal! mu" 
-
-    " search for nearest fxn name
-    " Note that you have to put the \<cr> to make sure it executes search
-    execute "normal! ?def .*(.*):\<cr>"
-    
-    " get the name of the function
-    let fxnName = matchstr(getline('.'), 'def .*(.*):')
-
-    " go back to mark
-    execute "normal! `u" 
-   
-    " compose contents to write to file
-    " join in vim, getting current filename @i
-    " concatenate in vimscript @i
-    let appendList = [join([fxnName, expand("%:p"), line('.'), col('.')], "\t")]
-    let inFxnFN = g:pluginHome . "/.mrufxndata"
-
-    " append info to file @example @append @vim
-    call writefile(readfile(inFxnFN) + appendList, inFxnFN)
-    
 endfunction 
 
 function! GoToFxnLocation()
@@ -43,9 +21,10 @@ function! GoToFxnLocation()
     " get the filename, line, column
     " Check if vim supports multiple variable assignment @wtodo @vimscript
     let lineInfo = split(getline('.'), '\t')
-    let fN = lineInfo[1]
-    let lineNumber = lineInfo[2]
+    let fN = lineInfo[5]
+    let lineOffset = lineInfo[2]
     let columnPosition = lineInfo[3] - 1
+    let tagRegex = lineInfo[4]
 
     " close the mrufxn window
     silent! close
@@ -53,8 +32,16 @@ function! GoToFxnLocation()
     " edit the file and go to the line
     let editCommand = "edit " . fnameescape(fN)
     echom editCommand
-    exe editCommand 
-    exe "call cursor(" . lineNumber . ", " . columnPosition . ")"
+    exe editCommand
+
+    " go to function/method line
+    exe "normal! gg" . tagRegex . "\<CR>"
+
+    " go to last cursor position
+    let l = line('.') + lineOffset
+    let cp = columnPosition + 1
+    echom "pos " . l . " " . columnPosition
+    exe "call cursor(" . l . ", " . cp . ")"
 
 endfunction
 
@@ -64,8 +51,8 @@ function! MRUFunction()
     belowright 12new
 
     " create mrufxn list
-    call system(g:pluginHome . "/recentfxn.py")
-    let eFile = g:pluginHome . "/.mrufxns"
+    call system(g:pluginHome . "/recentfxn.py browsertext")
+    let eFile = g:pluginHome . "/windowtext.txt"
     exe "edit " . eFile
     
     nnoremap <buffer>q :q<CR>
@@ -77,4 +64,6 @@ endfunction
 nnoremap <F3> :call MRUFunction()<CR>
 
 " log current fxn we are editing every time we insert text into a python file
-autocmd InsertLeave *.py :call StoreTraversedFunctionInfo()
+
+autocmd InsertLeave *.py :call LogTagLocationInfo()
+autocmd InsertLeave *.vim :call LogTagLocationInfo()
