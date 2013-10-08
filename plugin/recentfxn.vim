@@ -1,4 +1,3 @@
-
 let g:pluginHome = expand("<sfile>:p:h")
 
 function! LogTagLocationInfo()
