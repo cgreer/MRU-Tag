@@ -1,9 +1,9 @@
-let g:pluginHome = expand("<sfile>:p:h")
+let g:mruFXNPluginHome = expand("<sfile>:p:h")
 
 function! LogTagLocationInfo()
 
-    " test
-    let logcmd = g:pluginHome . "/recentfxn.py " . "log " . expand("%:p") . " " . line(".") . " " . col(".")
+    let logcmd = g:mruFXNPluginHome . "/recentfxn.py " . "log " . expand("%:p") . " " . line(".") . " " . col(".")
+
     echom logcmd
     let err = system(logcmd)
     echom "err" . err
@@ -50,8 +50,8 @@ function! MRUFunction()
     belowright 12new
 
     " create mrufxn list
-    call system(g:pluginHome . "/recentfxn.py browsertext")
-    let eFile = g:pluginHome . "/windowtext.txt"
+    call system(g:mruFXNPluginHome . "/recentfxn.py browsertext")
+    let eFile =  g:mruFXNPluginHome . "/windowtext.txt"
     exe "edit " . eFile
     
     nnoremap <buffer>q :q<CR>
