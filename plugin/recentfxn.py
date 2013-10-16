@@ -24,7 +24,9 @@ class TagFile:
 
     def tagify_file(self, fileName):
         '''execute ctags on a specific file (with linenumber option and get the output'''
-        ctagProcess = subprocess.Popen(["ctags", "--fields=+n", "-f", "-", fileName], stdout=subprocess.PIPE) 
+
+        # have to add the vimL mapping to prevent auto-sourcing from Pathogen
+        ctagProcess = subprocess.Popen(["ctags", "--langmap=Vim:+.vimL", "--fields=+n", "-f", "-", fileName], stdout=subprocess.PIPE) 
         fOutput = ctagProcess.stdout.readlines()
 
         return fOutput
@@ -115,13 +117,16 @@ def test_tagify(srcFileName):
     tFile = TagFile(srcFileName)
     print tFile.tags[0].name
 
-def log_tag_info(srcFile, lineNum, colNum, logFile):
+def log_tag_info(srcFile, lineNum, colNum, fileExtension, logFile):
     
-    print "logging tag info"
-    #get the nearest tag
-    nTag = get_nearby_tag(srcFile, lineNum, colNum)
+    #get the nearest tag, will return None if no tag match
+    cBufferFN = PLUGIN_HOME + "/tmp/cBuffer." + fileExtension
+    
+    nTag = get_nearby_tag(cBufferFN, lineNum, colNum)
   
     if nTag:
+        #change the file name to not point to the temp file
+        nTag.srcName = srcFile
         with open(logFile, 'a') as f:
             f.write(nTag.to_json() + "\n")
     else:
@@ -145,7 +150,8 @@ def get_nearby_tag(srcFile, lineNum, colNum, tagTypes = "fm"):
     return None
 
 def update_log(logFN):
-    '''remove non-existing tags (file changed/deleted or refactored)'''
+    '''remove non-existing tags (file changed/deleted or refactored)
+    and remove duplicate functions'''
     
     # re-factor log to class @wtodo @frequent-function
     tags = get_unique_tags(load_tags_from_log(logFN))
@@ -154,7 +160,6 @@ def update_log(logFN):
     tags = [tag for tag in tags if os.path.exists(tag.srcName)]
 
     # debug level @programming @wtodo
-    # google it
 
     # does the function exist anymore, has it been refactored?
     tags = [tag for tag in tags if tag.check_existence()] 
@@ -163,7 +168,9 @@ def update_log(logFN):
         [f.write(tag.to_json() + "\n") for tag in tags]
 
 def get_unique_tags(tags):
-    
+    '''tags are returned in order given
+    [a,b,c] -> [a,b] (if c was not unique)'''
+
     uniqueProps = set()
     uniqueTags = []
     while True:    
@@ -175,6 +182,9 @@ def get_unique_tags(tags):
         if tagUniqueProps not in uniqueProps:
             uniqueTags.append(currTag)
             uniqueProps.add(tagUniqueProps)
+
+    # popping and appending reversed the list order
+    uniqueTags.reverse()
 
     return uniqueTags
 
@@ -189,11 +199,15 @@ def load_tags_from_log(logFN):
 
 def generate_mru_browser_text():
 
+    #remove dups and non-existing first
     update_log(LOG_FILE)
-    uniqueTags = load_tags_from_log(LOG_FILE)
+
+    #get resulting tags and display in reverse order (log has newest at end)
+    logTags = load_tags_from_log(LOG_FILE)
+    logTags.reverse()
     
     with open(WINDOW_TEXT, 'w') as f:
-        for tag in uniqueTags:
+        for tag in logTags:
             if tag.prototype:
                 tName = tag.name + "(" + tag.prototype.replace("class:", "") + ")"
             else:
@@ -202,59 +216,12 @@ def generate_mru_browser_text():
             outText = tName + "\t" + os.path.basename(tag.srcName) + "\t" + str(tag.cursorOffsetLine) + "\t" + str(tag.cursorColumnNumber) + "\t" + tag.regex.replace(r'/;"', "") + "\t" + tag.srcName
             f.write(outText + "\n")
 
-class FxnLocation:
-     
-    def __init__(self, name, fileName, lineNumber, columnNumber):
-        self.name = name
-        self.fileName = fileName
-        self.lineNumber = lineNumber
-        self.columnNumber = columnNumber
-
-class FxnLocationCollection:
-
-    def __init__(self):
-        self.fxns = []
-
-    def output_mru_list(self):
-        ''' retain only unique and "newest" location
-        e.g., if same function has been used but different columnNumber -> just keep mru 
-        '''
-        
-        # collapse to unique fxn locations only 
-        relevantLocations = []
-        addedFxns = set()
-        for fxnLocation in reversed(self.fxns):
-            fxnIdentifier = fxnLocation.fileName + fxnLocation.name
-            if fxnIdentifier not in addedFxns:
-                relevantLocations.append(fxnLocation)
-                addedFxns.add(fxnIdentifier)
-
-        # print output
-        with open(PLUGIN_HOME + "/.mrufxns", 'w') as f:
-            for fxnLocation in relevantLocations:
-                f.write("\t".join([fxnLocation.name, fxnLocation.fileName,
-                    str(fxnLocation.lineNumber),
-                    str(fxnLocation.columnNumber)]) + "\n")
-        
-
-def get_mru_fxn_list(mrufxndata):
-
-    #get log of mru fxns
-    fxnLog = FxnLocationCollection()
-    with open(mrufxndata, 'r') as f:
-        for line in f:
-            name, fileName, lineNumber, columnNumber = line.strip().split("\t")
-            lineNumber, columnNumber = int(lineNumber), int(columnNumber)
-            fxnLog.fxns.append(FxnLocation(name, fileName, lineNumber, columnNumber))
-
-    fxnLog.output_mru_list()
-
 if __name__ == "__main__":
     import sys
 
     event = sys.argv[1]
     if event == "log":
-        log_tag_info(sys.argv[2], sys.argv[3], sys.argv[4], LOG_FILE)
+        log_tag_info(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], LOG_FILE)
     elif event == "browsertext":
         generate_mru_browser_text()
     else:

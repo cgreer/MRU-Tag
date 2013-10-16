@@ -2,20 +2,36 @@ let g:mruFXNPluginHome = expand("<sfile>:p:h")
 
 function! LogTagLocationInfo()
 
-    let logcmd = g:mruFXNPluginHome . "/recentfxn.py " . "log " . expand("%:p") . " " . line(".") . " " . col(".")
+    " first, write the current buffer to a tmp file
+    " This is needed because buffer contents could be unsaved and tag needs to
+    " come from most recent state of code
+    
+    " current buffer needs to be saved as a tmp file with correct extension
+    let currentExtension = expand("%:e")
 
-    echom logcmd
+    " change vim to vimL to avoid Pathogen sourcing... Don't want .vim tmp
+    " files to be sourced
+    if currentExtension == "vim"
+        let currentExtension = "vimL"
+    endif
+    " echom "tmp extension " . currentExtension
+
+    let cbc = g:mruFXNPluginHome . "/tmp/cBuffer." . currentExtension
+    execute "write! " . cbc
+
+    " get the tags from the temporary file being edited.  Pass the name of the
+    " edited file to allow MRUFunction to go to correct file when called on
+    let logcmd = g:mruFXNPluginHome . "/recentfxn.py " . "log " . expand("%:p") . " " . line(".") . " " . col(".") . " " . currentExtension
+
+    " echom "log cmd: " . logcmd
     let err = system(logcmd)
-    echom "err" . err
+    " echom "err: " . err
 
 endfunction 
 
-function! GoToFxnLocation()
-    
+function! GoToFxnLocation()    
     " Go to the file/function/line/column when you press enter (or enter a
     " number) on the mrufxn window
-
-    " assume enter was pressed
 
     " get the filename, line, column
     " Check if vim supports multiple variable assignment @wtodo @vimscript
@@ -29,9 +45,11 @@ function! GoToFxnLocation()
     silent! close
 
     " edit the file and go to the line
-    let editCommand = "edit " . fnameescape(fN)
-    echom editCommand
-    exe editCommand
+    if fnameescape(fN) != fnameescape(expand("%:p"))
+        let editCommand = "edit " . fnameescape(fN)
+        " echom editCommand
+        exe editCommand
+    endif
 
     " go to function/method line
     exe "normal! gg" . tagRegex . "\<CR>"
@@ -39,7 +57,7 @@ function! GoToFxnLocation()
     " go to last cursor position
     let l = line('.') + lineOffset
     let cp = columnPosition + 1
-    echom "pos " . l . " " . columnPosition
+    " echom "pos " . l . " " . columnPosition
     exe "call cursor(" . l . ", " . cp . ")"
 
 endfunction
@@ -51,6 +69,8 @@ function! MRUFunction()
 
     " create mrufxn list
     call system(g:mruFXNPluginHome . "/recentfxn.py browsertext")
+
+    " open up the browser text
     let eFile =  g:mruFXNPluginHome . "/windowtext.txt"
     exe "edit " . eFile
     
@@ -59,7 +79,7 @@ function! MRUFunction()
 
 endfunction
 
-" map leader <F3> to open the mrufxn window
+" open MRUFunction Browser
 nnoremap <F3> :call MRUFunction()<CR>
 
 " log current fxn we are editing every time we insert text into a python file
