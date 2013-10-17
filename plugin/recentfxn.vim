@@ -8,16 +8,8 @@ function! LogTagLocationInfo()
     
     " current buffer needs to be saved as a tmp file with correct extension
     let currentExtension = expand("%:e")
-
-    " change vim to vimL to avoid Pathogen sourcing... Don't want .vim tmp
-    " files to be sourced
-    if currentExtension == "vim"
-        let currentExtension = "vimL"
-    endif
-    " echom "tmp extension " . currentExtension
-
-    let cbc = g:mruFXNPluginHome . "/tmp/cBuffer." . currentExtension
-    execute "write! " . cbc
+    let currModBuffer = g:mruFXNPluginHome . "/../tmp/cBuffers/cBuffer." . currentExtension
+    silent execute "write! " . currModBuffer
 
     " get the tags from the temporary file being edited.  Pass the name of the
     " edited file to allow MRUFunction to go to correct file when called on
@@ -71,7 +63,7 @@ function! MRUFunction()
     call system(g:mruFXNPluginHome . "/recentfxn.py browsertext")
 
     " open up the browser text
-    let eFile =  g:mruFXNPluginHome . "/windowtext.txt"
+    let eFile =  g:mruFXNPluginHome . "/../tmp/windowtext.txt"
     exe "edit " . eFile
     
     nnoremap <buffer>q :q<CR>
@@ -84,5 +76,5 @@ nnoremap <F3> :call MRUFunction()<CR>
 
 " log current fxn we are editing every time we insert text into a python file
 
-autocmd InsertLeave *.py :call LogTagLocationInfo()
-autocmd InsertLeave *.vim :call LogTagLocationInfo()
+" autocmd InsertLeave *.py :call LogTagLocationInfo()
+" autocmd InsertLeave *.vim :call LogTagLocationInfo()

@@ -9,8 +9,8 @@ import cgtools
 
 # get directory of this file @i @python
 PLUGIN_HOME = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE = PLUGIN_HOME + "/locations.log"
-WINDOW_TEXT = PLUGIN_HOME + "/windowtext.txt"
+LOG_FILE = PLUGIN_HOME + "/../data/locations.log"
+WINDOW_TEXT = PLUGIN_HOME + "/../tmp/windowtext.txt"
 
 class TagFile:
 
@@ -26,7 +26,7 @@ class TagFile:
         '''execute ctags on a specific file (with linenumber option and get the output'''
 
         # have to add the vimL mapping to prevent auto-sourcing from Pathogen
-        ctagProcess = subprocess.Popen(["ctags", "--langmap=Vim:+.vimL", "--fields=+n", "-f", "-", fileName], stdout=subprocess.PIPE) 
+        ctagProcess = subprocess.Popen(["ctags", "--fields=+n", "-f", "-", fileName], stdout=subprocess.PIPE) 
         fOutput = ctagProcess.stdout.readlines()
 
         return fOutput
@@ -120,7 +120,7 @@ def test_tagify(srcFileName):
 def log_tag_info(srcFile, lineNum, colNum, fileExtension, logFile):
     
     #get the nearest tag, will return None if no tag match
-    cBufferFN = PLUGIN_HOME + "/tmp/cBuffer." + fileExtension
+    cBufferFN = PLUGIN_HOME + "/../tmp/cBuffers/cBuffer." + fileExtension
     
     nTag = get_nearby_tag(cBufferFN, lineNum, colNum)
   
