@@ -30,7 +30,7 @@ def groupby(listOfObjects, attributeName):
     '''
     group list of object by a property of the object 
     properties of each object must be of the same type 
-    lists must not include complext types (no list of lists)
+    lists must not include complex types (no list of lists)
     '''
 
    

@@ -1,121 +1,22 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import os
 import subprocess
 import json
 import re
+import collections
 
 import cgtools
+from expandmenu import ExpandMenu
+from tags import TagFile, Tag
+from dlogger import dlog
 
 # get directory of this file @i @python
 PLUGIN_HOME = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = PLUGIN_HOME + "/../data/locations.log"
 WINDOW_TEXT = PLUGIN_HOME + "/../tmp/windowtext.txt"
-
-class TagFile:
-
-    def __init__(self, srcFileName):
-        '''create tags for the file'''
-        
-        self.srcFileName = srcFileName
-        self.tags = []
-
-        [self.tags.append(Tag(ctagsLine = line)) for line in self.tagify_file(srcFileName)]
-
-    def tagify_file(self, fileName):
-        '''execute ctags on a specific file (with linenumber option and get the output'''
-
-        # have to add the vimL mapping to prevent auto-sourcing from Pathogen
-        ctagProcess = subprocess.Popen(["ctags", "--fields=+n", "-f", "-", fileName], stdout=subprocess.PIPE) 
-        fOutput = ctagProcess.stdout.readlines()
-
-        return fOutput
-
-class Tag:
-
-    def __init__(self, ctagsLine = None, jsonLine = None):
-
-        self.name = None
-        self.srcName = None
-        self.regex = None
-        self.type = None
-        self.lineNumber = None
-        self.prototype = None
-        self.ctagsLine = ctagsLine
-        self.jsonLine = jsonLine
-
-        #cursor location information (should re-factor)
-        self.cursorOffsetLine = None
-        self.cursorColumnNumber = None
-
-        # optional initialization
-        if ctagsLine:
-            self.parse_ctags_output_line()
-        elif jsonLine:
-            self.from_json()
-
-    def __repr__(self):
-        return "\t".join([str(x) for x in (self.name, self.srcName, self.type)])
-
-    def check_existence(self):
-        with open(self.srcName, 'r') as f: 
-            reg = self.truncate_regex()
-
-            # why do I not have to escape these in vim? @wtodo @frequent-function @python 
-            reg = reg.replace("(", "\(")
-            reg = reg.replace(")", "\)")
-            pat = re.compile(reg, re.MULTILINE)
-            # existence of a regex in string @example @regex @python 
-            if pat.search(f.read()): 
-                return True
-            else:
-                return False
-
-    def truncate_regex(self):
-
-        tRegex = self.regex
-        if self.regex[0] == "/":
-            tRegex = self.regex[1:] 
-
-        tRegex = tRegex.replace(r'/;"', "")
-        return tRegex
-
-    def parse_ctags_output_line(self):
-
-        ls = self.ctagsLine.strip().split("\t")
-        self.name = ls[0]
-        self.srcName = ls[1]
-        self.regex = ls[2]
-        self.type = ls[3]
-        self.lineNumber = int(ls[4].replace("line:", ""))
-        try:
-            self.prototype = ls[5]
-        except IndexError:
-            self.prototype = None 
-
-    def to_json(self):
-        # make a json dict maker @wtodo @python 
-        jDict = {"name": self.name,
-                 "srcName": self.srcName,
-                 "regex": self.regex,
-                 "type": self.type,
-                 "lineNumber": self.lineNumber,
-                 "prototype": self.prototype,
-                 "cursorOffsetLine": self.cursorOffsetLine,
-                 "cursorColumnNumber": self.cursorColumnNumber
-                 }
-
-        return json.dumps(jDict)
-
-    def from_json(self):
-       objProperties = json.loads(self.jsonLine.strip()) 
-       for attName, attProp in objProperties.items():
-           setattr(self, attName, attProp)
-
-def test_tagify(srcFileName):
-    '''just testing if ctagging works'''
-    tFile = TagFile(srcFileName)
-    print tFile.tags[0].name
+MENU_STATE = PLUGIN_HOME + "/../tmp/menu_state.txt"
 
 def log_tag_info(srcFile, lineNum, colNum, fileExtension, logFile):
     
@@ -130,7 +31,7 @@ def log_tag_info(srcFile, lineNum, colNum, fileExtension, logFile):
         with open(logFile, 'a') as f:
             f.write(nTag.to_json() + "\n")
     else:
-        print "no tags"
+        print("no tags")
 
 def get_nearby_tag(srcFile, lineNum, colNum, tagTypes = "fm"):
     ''' f = function, m = method '''
@@ -149,7 +50,7 @@ def get_nearby_tag(srcFile, lineNum, colNum, tagTypes = "fm"):
     # no tag was found
     return None
 
-def update_log(logFN):
+def update_log(logFN, cBufferFN):
     '''remove non-existing tags (file changed/deleted or refactored)
     and remove duplicate functions'''
     
@@ -162,7 +63,7 @@ def update_log(logFN):
     # debug level @programming @wtodo
 
     # does the function exist anymore, has it been refactored?
-    tags = [tag for tag in tags if tag.check_existence()] 
+    tags = [tag for tag in tags if tag.check_existence(cBufferFN)] 
 
     with open(logFN, 'w') as f:
         [f.write(tag.to_json() + "\n") for tag in tags]
@@ -197,33 +98,77 @@ def load_tags_from_log(logFN):
 
     return tags
 
-def generate_mru_browser_text():
+def generate_mru_browser_text(cBufferName, browserMode):
 
-    #remove dups and non-existing first
-    update_log(LOG_FILE)
+    # remove dups and non-existing first
+    update_log(LOG_FILE, cBufferName)
 
-    #get resulting tags and display in reverse order (log has newest at end)
+    if browserMode == "fxn":
+        menu_functions_only()
+    elif browserMode == "byfile":
+        menu_by_file()
+    else:
+        raise ValueError("Need Menu Mode")
+
+def menu_by_file():
+    '''create an expandable menu
+    save text in windowtext file
+    save state'''
+
+    menuLines = create_by_file_expand_lines()
+    eMenu = ExpandMenu(menuLines = menuLines)
+    eMenu.output_menu(WINDOW_TEXT)
+    eMenu.save_to_file(MENU_STATE)
+
+def menu_functions_only():
+    
+    # get resulting tags and display in reverse order (log has newest at end)
     logTags = load_tags_from_log(LOG_FILE)
     logTags.reverse()
     
     with open(WINDOW_TEXT, 'w') as f:
         for tag in logTags:
-            if tag.prototype:
-                tName = tag.name + "(" + tag.prototype.replace("class:", "") + ")"
-            else:
-                tName = tag.name
+            f.write(tag.function_choice_output() + "\n")
 
-            outText = tName + "\t" + os.path.basename(tag.srcName) + "\t" + str(tag.cursorOffsetLine) + "\t" + str(tag.cursorColumnNumber) + "\t" + tag.regex.replace(r'/;"', "") + "\t" + tag.srcName
-            f.write(outText + "\n")
+def create_by_file_expand_lines():
+    '''should give this an ordered dict and have it make it'''
+    
+    # get resulting tags and display in reverse order (log has newest at end)
+    logTags = load_tags_from_log(LOG_FILE)
+    logTags.reverse()
+
+    # group by the file names, order by mru file
+    srcName_tags = collections.OrderedDict()
+    for tag in logTags:
+        srcName_tags.setdefault(tag.srcName, []).append(tag)
+
+    return srcName_tags
+
+def handle_expand_choice(choice):
+
+    eMenu = ExpandMenu()
+    eMenu.load_from_file(MENU_STATE)
+    eMenu.handle_expansion_change(choice)
+    eMenu.output_menu(WINDOW_TEXT)
+    eMenu.save_to_file(MENU_STATE)
 
 if __name__ == "__main__":
     import sys
 
     event = sys.argv[1]
     if event == "log":
+        srcFile, lineNum, colNum, fExtension = sys.argv[2:]
         log_tag_info(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], LOG_FILE)
-    elif event == "browsertext":
-        generate_mru_browser_text()
+    elif event == "menu":
+        dlog(sys.argv)
+        cBuffer, mode = sys.argv[2:]
+        generate_mru_browser_text(cBuffer, mode)
+    elif event == "expand":
+        dlog(sys.argv)
+        expandChoice = sys.argv[2]
+        handle_expand_choice(expandChoice)
+    elif event == "test":
+        test_emenu()
     else:
         raise KeyError("Must Specify Event")
      
