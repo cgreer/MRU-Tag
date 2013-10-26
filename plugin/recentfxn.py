@@ -2,15 +2,13 @@
 
 from __future__ import print_function
 import os
-import subprocess
-import json
-import re
 import collections
+import logging
 
 import cgtools
 from expandmenu import ExpandMenu
 from tags import TagFile, Tag
-from dlogger import dlog
+from pythontag import py_get_nearest_tag
 
 # get directory of this file @i @python
 PLUGIN_HOME = os.path.dirname(os.path.abspath(__file__))
@@ -19,36 +17,76 @@ WINDOW_TEXT = PLUGIN_HOME + "/../tmp/windowtext.txt"
 MENU_STATE = PLUGIN_HOME + "/../tmp/menu_state.txt"
 
 def log_tag_info(srcFile, lineNum, colNum, fileExtension, logFile):
-    
+    ''' Log nearest tag when vim sends log signal '''
     #get the nearest tag, will return None if no tag match
     cBufferFN = PLUGIN_HOME + "/../tmp/cBuffers/cBuffer." + fileExtension
+    logging.info("cbuffer file: " + cBufferFN)
     
-    nTag = get_nearby_tag(cBufferFN, lineNum, colNum)
-  
+    logging.info("getting nearest tag... " + cBufferFN)
+    nTag = get_nearby_tag(cBufferFN, lineNum, colNum, fileExtension)
+ 
     if nTag:
+        logging.info("FOUND TAG: %s", nTag.name)
+
         #change the file name to not point to the temp file
         nTag.srcName = srcFile
         with open(logFile, 'a') as f:
             f.write(nTag.to_json() + "\n")
     else:
-        print("no tags")
+        logging.warning("NO TAGS")
 
-def get_nearby_tag(srcFile, lineNum, colNum, tagTypes = "fm"):
+def get_nearby_tag(srcFile, lineNum, colNum, fileExtension, tagTypes = "fm"):
     ''' f = function, m = method '''
     lineNum, colNum = int(lineNum), int(colNum)
     tFile = TagFile(srcFile)
     lineNum_tag = cgtools.groupby(tFile.tags, "lineNumber")
 
+    # custom nearest tag functions
+    logging.info("src, fe, line: %s, %s, %d", srcFile, fileExtension, lineNum)
+    if fileExtension == "py":
+        logging.info("PYTHON tag... ")
+        (nTag, tagLineNum) = py_nearest_tag(srcFile, lineNum, colNum,  lineNum_tag, tagTypes)
+    else:
+        logging.info("GENERAL tag... ")
+        (nTag, tagLineNum) = general_nearest_tag(lineNum, lineNum_tag, tagTypes)
+
+    if nTag:
+        nTag.cursorOffsetLine = lineNum - tagLineNum
+        nTag.cursorColumnNumber = colNum
+        return nTag
+    else:
+        return None
+
+def py_nearest_tag(srcFile, lineNum, colNum, lineNum_tag, tagTypes):
+
+    '''check 1-based line'''
+    with open(srcFile, 'r') as f:
+        fileText = f.read()
+
+    pyNearest = py_get_nearest_tag(fileText, lineNum, colNum) 
+    if pyNearest:
+        logging.info("pyNearest: %d %s", pyNearest[0], pyNearest[1])
+        tLineNum, tName = pyNearest
+        if tLineNum in lineNum_tag:
+            nTag = lineNum_tag[tLineNum][0]
+            if nTag.type in tagTypes:
+                logging.info("FOUND TAG [%s %d]", nTag.name, tLineNum)
+                return (nTag, tLineNum)
+
+    # no tags found
+    logging.info("NO TAG FOUND")
+    return (None, None)
+
+def general_nearest_tag(lineNum, lineNum_tag, tagTypes):
+    
     for i in xrange(lineNum, 0, -1):
         if i in lineNum_tag:
             nearTag = lineNum_tag[i][0]
             if nearTag.type in tagTypes:
-                nearTag.cursorOffsetLine = lineNum - i
-                nearTag.cursorColumnNumber = colNum
-                return nearTag 
+                return (nearTag, i)
 
-    # no tag was found
-    return None
+    # no tags
+    return (None, None)
 
 def update_log(logFN, cBufferFN):
     '''remove non-existing tags (file changed/deleted or refactored)
@@ -74,7 +112,7 @@ def get_unique_tags(tags):
 
     uniqueProps = set()
     uniqueTags = []
-    while True:    
+    while True:
         if not tags:
             break
 
@@ -93,8 +131,8 @@ def load_tags_from_log(logFN):
 
     tags = []
     with open(logFN, 'r') as f:
-        for jLine in f: 
-            tags.append(Tag(jsonLine = jLine))
+        for jsonline in f:
+            tags.append(Tag(jsonLine = jsonline))
 
     return tags
 
@@ -155,20 +193,21 @@ def handle_expand_choice(choice):
 if __name__ == "__main__":
     import sys
 
+    # Set up logging
+    logging.basicConfig(filename=PLUGIN_HOME + '/../debug.txt', level=logging.INFO)
+
+    # Handle events
     event = sys.argv[1]
+    logging.info("***     MAIN     ***")
+    logging.info("***     %s     ***", event)
+    logging.info("args: %s", sys.argv[1:])
     if event == "log":
-        srcFile, lineNum, colNum, fExtension = sys.argv[2:]
         log_tag_info(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], LOG_FILE)
     elif event == "menu":
-        dlog(sys.argv)
         cBuffer, mode = sys.argv[2:]
         generate_mru_browser_text(cBuffer, mode)
     elif event == "expand":
-        dlog(sys.argv)
-        expandChoice = sys.argv[2]
-        handle_expand_choice(expandChoice)
-    elif event == "test":
-        test_emenu()
+        expand_choice = sys.argv[2]
+        handle_expand_choice(expand_choice)
     else:
-        raise KeyError("Must Specify Event")
-     
+        raise KeyError("Must Specify Event")     

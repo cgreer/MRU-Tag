@@ -1,12 +1,14 @@
 
 ## Todo/Issues
-- [ ] Custom "nearest tag function" for python to handle nested functions/methods.
 - [ ] Add gif to show usage.
 - [ ] Python 3 Compatible
-- [ ] Windows Compatible
-- [ ] Syntax/Colors for Browser 
 - [ ] Add by-class sorting into Expand Menu
 - [ ] Add "pick function by number"
+- [ ] Windows Compatible
+
+###
+- [x] Syntax/Colors for Browser 
+- [x] Custom "nearest tag function" for python to handle nested functions/methods.
 
 ### 2013-10-20
 - [x] Expand Menu Display (by file, and function)

@@ -4,6 +4,7 @@ import os
 import re
 
 from dlogger import dlog
+from mruutility import first_non_whitespace_index
 
 PLUGIN_HOME = os.path.dirname(os.path.abspath(__file__))
 
@@ -14,17 +15,20 @@ class TagFile:
         
         self.srcFileName = srcFileName
         self.tags = []
+        self.get_tags_in_file()
 
-        [self.tags.append(Tag(ctagsLine = line)) for line in self.tagify_file(srcFileName)]
+    def get_tags_in_file(self):
 
-    def tagify_file(self, fileName):
-        '''execute ctags on a specific file (with linenumber option and get the output'''
+        [self.tags.append(Tag(ctagsLine = line)) for line in tagify_file(self.srcFileName)]
 
-        # have to add the vimL mapping to prevent auto-sourcing from Pathogen
-        ctagProcess = subprocess.Popen(["ctags", "--fields=+n", "-f", "-", fileName], stdout=subprocess.PIPE) 
-        fOutput = ctagProcess.stdout.readlines()
+def tagify_file(fileName):
+    '''execute ctags on a specific file (with linenumber option and get the output'''
 
-        return fOutput
+    # have to add the vimL mapping to prevent auto-sourcing from Pathogen
+    ctagProcess = subprocess.Popen(["ctags", "--fields=+n", "-f", "-", fileName], stdout=subprocess.PIPE) 
+    fOutput = ctagProcess.stdout.readlines()
+
+    return fOutput
 
 class Tag:
 
@@ -34,10 +38,11 @@ class Tag:
         self.srcName = None
         self.regex = None
         self.type = None
-        self.lineNumber = None
+        self.lineNumber = None #1-based
         self.prototype = None
         self.ctagsLine = ctagsLine
         self.jsonLine = jsonLine
+        self.fnwi = None
 
         #cursor location information (should re-factor)
         self.cursorOffsetLine = None
@@ -48,6 +53,9 @@ class Tag:
             self.parse_ctags_output_line()
         elif jsonLine:
             self.from_json()
+       
+        # first character is always "^"
+        self.fnwi = first_non_whitespace_index(self.regex[2:])
 
     def __repr__(self):
         return "\t".join([str(x) for x in (self.name, self.srcName, self.type)])
@@ -121,11 +129,23 @@ class Tag:
         return json.dumps(jDict)
 
     def from_json(self):
-       objProperties = json.loads(self.jsonLine.strip()) 
-       for attName, attProp in objProperties.items():
-           setattr(self, attName, attProp)
+        objProperties = json.loads(self.jsonLine.strip()) 
+        for attName, attProp in objProperties.items():
+            setattr(self, attName, attProp)
 
 def test_tagify(srcFileName):
     '''just testing if ctagging works'''
     tFile = TagFile(srcFileName)
-    print (tFile.tags[0].name)
+    print tFile
+    for tag in tFile.tags:
+        print tag.name
+        print tag.lineNumber
+        print tag.regex[2:]
+        print tag.fnwi
+
+if __name__ == "__main__":
+    import sys
+    assert sys.argv[1] in globals(), "Need name of fxn to run from command line!"
+    fxnToRun = globals()[sys.argv[1]] 
+    fxnToRun(*sys.argv[2:])
+

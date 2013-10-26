@@ -1,5 +1,14 @@
 let g:mruFXNPluginHome = expand("<sfile>:p:h")
 let g:mruDisplayMode = "byfile"
+let g:mrutaglogFN = g:mruFXNPluginHome . "/../debug.txt"
+
+function! Logger(logString)
+   
+    let appendList = ["VIMLOG: " . a:logString]
+    let currLogInfo = readfile(g:mrutaglogFN)
+    call writefile(currLogInfo + appendList, g:mrutaglogFN)
+
+endfunction
 
 function! WriteCurrentBufferToFile()
     " current buffer needs to be saved as a tmp file with correct extension
@@ -15,7 +24,7 @@ function! LogTagLocationInfo()
     " first, write the current buffer to a tmp file
     " This is needed because buffer contents could be unsaved and tag needs to
     " come from most recent state of code
-    
+    call Logger("LOGGING TAG INFO " . " test")  
     call WriteCurrentBufferToFile()
 
     " get the tags from the temporary file being edited.  Pass the name of the
@@ -23,9 +32,8 @@ function! LogTagLocationInfo()
     let currentExtension = expand("%:e")
     let logcmd = g:mruFXNPluginHome . "/recentfxn.py " . "log " . expand("%:p") . " " . line(".") . " " . col(".") . " " . currentExtension
 
-    " echom "log cmd: " . logcmd
     let err = system(logcmd)
-    " echom "err: " . err
+    call Logger("log tag info err: " . err)
 
 endfunction 
 
@@ -51,11 +59,13 @@ function! UpdateExpandMenu(cLine)
     let expandNumber = matchstr(a:cLine, '\v(\+|-)\[\zs\d+')
     let logCmd = g:mruFXNPluginHome . '/recentfxn.py expand ' . expandNumber
     let err = system(logCmd)
-    echom "err: " . err
+    call Logger("UpdateExpandError: " . err)
     
     " open up the browser text
     let eFile =  g:mruFXNPluginHome . "/../tmp/windowtext.txt"
     exe "edit " . eFile
+
+    call SetBrowserSettings()
 
 endfunction
 
@@ -73,7 +83,6 @@ function! GoToFileLocation()
     " edit the file and go to the line IF we aren't there already
     if fnameescape(fN) != fnameescape(expand("%:p"))
         let editCommand = "edit " . fnameescape(fN)
-        " echom editCommand
         exe editCommand
     endif
 
@@ -104,7 +113,6 @@ function! GoToFxnLocation()
     " edit the file and go to the line
     if fnameescape(fN) != fnameescape(expand("%:p"))
         let editCommand = "edit " . fnameescape(fN)
-        " echom editCommand
         exe editCommand
     endif
 
@@ -114,7 +122,6 @@ function! GoToFxnLocation()
     " go to last cursor position
     let l = line('.') + lineOffset
     let cp = columnPosition
-    " echom "pos " . l . " " . columnPosition
     exe "call cursor(" . l . ", " . cp . ")"
 
     "log that we went here
@@ -132,22 +139,28 @@ function! MRUFunction()
     " create mrufxn list
     let cBufName = fnameescape(expand("%:p"))
     let err = system(g:mruFXNPluginHome . "/recentfxn.py menu " . cBufName . " " . g:mruDisplayMode)
-    echom err 
+    call Logger("MRUFuncError: " . err) 
 
     " create new window
     belowright 12new
-    set nonumber
-    " echom "getting name of the buffer " . cBufName 
 
     " open up the browser text
     let eFile =  g:mruFXNPluginHome . "/../tmp/windowtext.txt"
     exe "edit " . eFile
     
+    call SetBrowserSettings()
+    
+
+endfunction
+
+function SetBrowserSettings()
+    set nonumber
+    exe "set ft=mrutext"
     nnoremap <buffer>q :q<CR>
     nnoremap <buffer><CR> :call HandleChoice()<CR> 
     nmap <buffer><F3> :q<CR> 
-
 endfunction
+
 
 " open MRUFunction Browser
 nnoremap <F3> :call MRUFunction()<CR>

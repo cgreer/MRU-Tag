@@ -3,7 +3,8 @@ import json
 
 class ExpandMenu(object):
 
-    def __init__(self, menuLines = None, options = None):
+    def __init__(self, menuLines = None):
+        '''menuLines is an OrderedDict'''
         self.menuLines = menuLines
         self.expanded = []
         self.menuText = ""
@@ -23,7 +24,6 @@ class ExpandMenu(object):
             for i, tag in enumerate(menuLines[fName]):
                 self.menuText += prefixSep + tag.function_choice_output() + "\n"
 
-
     def menu_lines(self):
         return self.menuText.split("\n")
 
@@ -33,7 +33,7 @@ class ExpandMenu(object):
         eCounter = 0
         with open(fName, 'w') as f:
             for mLine in self.menu_lines():
-                if self.is_expandable(mLine):
+                if is_expandable(mLine):
                     eCounter += 1
                     if eCounter in self.expanded:
                         f.write(mLine.replace("+[", "-[") + "\n")
@@ -48,15 +48,11 @@ class ExpandMenu(object):
 
         # choice will be given as X of line in [X]
         choice = int(choice)
-        print("choice " + str(choice))
-        print(self.expanded)
         if choice in self.expanded:
             self.expanded.remove(choice)
         else:
             self.expanded.append(choice)
 
-    def is_expandable(self, text):
-        return text.startswith("+[") or text.startswith("-[")
 
     def load_from_file(self, fName):
 
@@ -77,32 +73,9 @@ class ExpandMenu(object):
         return json.dumps(jDict)
 
     def from_json(self, jsonLine):
-       objProperties = json.loads(jsonLine.strip()) 
-       for attName, attProp in objProperties.items():
-           setattr(self, attName, attProp)
-
-def test_emenu():
-
-    update_log(LOG_FILE, "None")
-
-    #create menu
-    mLines = create_by_file_expand_lines()
-    eMenu = ExpandMenu(mLines)
-
-    #output windowtext to file
-    eMenu.output_menu(WINDOW_TEXT)
-
-    #save state
-    eMenu.save_to_file(MENU_STATE)
-
-
-    #load state
-    eMenu = ExpandMenu()
-    eMenu.load_from_file(MENU_STATE)
+        objProperties = json.loads(jsonLine.strip()) 
+        for attName, attProp in objProperties.items():
+            setattr(self, attName, attProp)
     
-    for cs in (1, 2, 2, 1):
-        raw_input()
-
-        #change expansion
-        eMenu.handle_expansion_change(cs)
-        eMenu.output_menu(WINDOW_TEXT)
+def is_expandable(text):
+    return text.startswith("+[") or text.startswith("-[")
