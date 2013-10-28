@@ -1,11 +1,14 @@
 # MRU-Tag
-Spend less time navigating and more time coding!
+  *Spend less time navigating and more time coding!*
 
-MRU-Tag allows you to quickly jump to the most recently used files and tags(functions/methods/etc). 
-![Sample Output](https::github.com/sequenceGeek/MRU-Function/raw/master/sample.gif)
+## Introduction
+MRU-Tag allows you to quickly jump to your most recently used files and tags(functions/methods/etc).  
+
+![Sample Output](https://github.com/sequenceGeek/MRU-Function/raw/master/sample.gif)
 
 ## Install
-(Note: MRU-Tag currently requires Python and is only tested on Linux)
+(Note: MRU-Tag currently requires Python to be installed and has not been tested on Windows machines)
+
 1. Install Exuberant Ctags.
 
         sudo apt-get install exuberant-ctags  
@@ -16,8 +19,8 @@ MRU-Tag allows you to quickly jump to the most recently used files and tags(func
         cd ~/.vim/bundle  
         git clone git@github.com:sequenceGeek/MRU-Function.git
 
-## Usage 
-(Edit code in a few functions/methods/etc to populate Browser)
-- Pressing `<F3>` opens the MRU Function Browser.
-- Select file and press `<Enter>` to expand the file's MRU tags.
-- Select tag and press `<Enter>` to jump to tag
+## Usage
+(Note: start editing code inside functions/methods/etc to populate browser)
+- Pressing `<F3>` opens the MRU Tag Browser.
+- Select a file and press `<Enter>` to expand the file's MRU tags.
+- Select a tag and press `<Enter>` to jump to the tag.
