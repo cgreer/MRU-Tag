@@ -5,7 +5,7 @@ import os
 import collections
 import logging
 
-import cgtools
+from mruutility import groupby
 from expandmenu import ExpandMenu
 from tags import TagFile, Tag
 from pythontag import py_get_nearest_tag
@@ -39,7 +39,7 @@ def get_nearby_tag(srcFile, lineNum, colNum, fileExtension, tagTypes = "fm"):
     ''' f = function, m = method '''
     lineNum, colNum = int(lineNum), int(colNum)
     tFile = TagFile(srcFile)
-    lineNum_tag = cgtools.groupby(tFile.tags, "lineNumber")
+    lineNum_tag = groupby(tFile.tags, "lineNumber")
 
     # custom nearest tag functions
     logging.info("src, fe, line: %s, %s, %d", srcFile, fileExtension, lineNum)

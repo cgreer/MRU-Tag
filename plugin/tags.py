@@ -3,7 +3,6 @@ import json
 import os
 import re
 
-from dlogger import dlog
 from mruutility import first_non_whitespace_index
 
 PLUGIN_HOME = os.path.dirname(os.path.abspath(__file__))
@@ -67,7 +66,8 @@ class Tag:
         else:
             tName = self.name
 
-        outText = tName + "\t" + os.path.basename(self.srcName) + "\t" + str(self.cursorOffsetLine) + "\t" + str(self.cursorColumnNumber) + "\t" + self.regex.replace(r'/;"', "") + "\t" + self.srcName
+        whitespace = ' ' * 1000
+        outText = tName + whitespace + '\t' + os.path.basename(self.srcName) + "\t" + str(self.cursorOffsetLine) + "\t" + str(self.cursorColumnNumber) + "\t" + self.regex.replace(r'/;"', "") + "\t" + self.srcName
         return outText
 
     def check_existence(self, cBufferFN):
@@ -77,7 +77,6 @@ class Tag:
         if cBufferFN == self.srcName:
             # search through the modified buffer instead
             checkFN = PLUGIN_HOME + "/../tmp/cBuffers/cBuffer." + self.srcName.split(".")[-1]
-            dlog("checkFN: " + checkFN)
 
         with open(checkFN, 'r') as f: 
             reg = self.truncate_regex()

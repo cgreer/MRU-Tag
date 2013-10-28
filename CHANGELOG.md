@@ -1,12 +1,15 @@
 
 ## Todo/Issues
-- [ ] Add gif to show usage.
-- [ ] Python 3 Compatible
-- [ ] Add by-class sorting into Expand Menu
+- [ ] Include (in the browser) opened files even when no code editing occurs.
+- [ ] Python 3 compatible
 - [ ] Add "pick function by number"
-- [ ] Windows Compatible
+- [ ] Windows compatible
 
-###
+### 2013-10-27
+- [x] Add gif to show usage.
+- [x] Updated browser formatting and syntax highlighting
+
+### 2013-10-26
 - [x] Syntax/Colors for Browser 
 - [x] Custom "nearest tag function" for python to handle nested functions/methods.
 

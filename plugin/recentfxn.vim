@@ -142,7 +142,7 @@ function! MRUFunction()
     call Logger("MRUFuncError: " . err) 
 
     " create new window
-    belowright 12new
+    belowright 10new
 
     " open up the browser text
     let eFile =  g:mruFXNPluginHome . "/../tmp/windowtext.txt"
@@ -150,12 +150,16 @@ function! MRUFunction()
     
     call SetBrowserSettings()
     
+    exe "call cursor(2,1)"
+    
 
 endfunction
 
 function SetBrowserSettings()
-    set nonumber
     exe "set ft=mrutext"
+    set nonumber
+    set nowrap
+    " set nomodifiable
     nnoremap <buffer>q :q<CR>
     nnoremap <buffer><CR> :call HandleChoice()<CR> 
     nmap <buffer><F3> :q<CR> 

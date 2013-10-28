@@ -17,10 +17,12 @@ class ExpandMenu(object):
         menuLines is an ORDERED DICT'''
 
         prefixSep = "  "
-        self.menuText = ""
+        self.menuText = " MRU-Tag (Files sorted by MRU.  Select file to see MRU tags)\n"
+        whitespace = " " * 1000
         for i, fName in enumerate(menuLines):
-            self.menuText += "+[" + str(i + 1) + "] " + os.path.basename(fName) + "\n"
-            self.menuText +=  prefixSep + "...go to " + os.path.basename(fName) + "\t" + fName + "\n"
+            baseFileName = os.path.basename(fName)
+            self.menuText += "+[" + str(i + 1) + "] " + baseFileName + "\n"
+            self.menuText +=  prefixSep + "...go to " + baseFileName + whitespace + "\t" + fName + "\n"
             for i, tag in enumerate(menuLines[fName]):
                 self.menuText += prefixSep + tag.function_choice_output() + "\n"
 
@@ -32,7 +34,7 @@ class ExpandMenu(object):
         tPrint = False
         eCounter = 0
         with open(fName, 'w') as f:
-            for mLine in self.menu_lines():
+            for i, mLine in enumerate(self.menu_lines()):
                 if is_expandable(mLine):
                     eCounter += 1
                     if eCounter in self.expanded:
@@ -42,7 +44,12 @@ class ExpandMenu(object):
                         f.write(mLine + "\n")
                         tPrint = False
                 else:
-                    if tPrint: f.write(mLine + "\n")
+                    # Title menu
+                    if i == 0:
+                        f.write(mLine + "\n")
+                    # Everything else
+                    elif tPrint: 
+                        f.write(mLine + "\n")
 
     def handle_expansion_change(self, choice):
 
