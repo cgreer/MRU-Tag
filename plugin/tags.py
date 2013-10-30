@@ -24,7 +24,7 @@ def tagify_file(fileName):
     '''execute ctags on a specific file (with linenumber option and get the output'''
 
     # have to add the vimL mapping to prevent auto-sourcing from Pathogen
-    ctagProcess = subprocess.Popen(["ctags", "--fields=+n", "-f", "-", fileName], stdout=subprocess.PIPE) 
+    ctagProcess = subprocess.Popen(["ctags-exuberant", "--fields=+n", "-f", "-", fileName], stdout=subprocess.PIPE) 
     fOutput = ctagProcess.stdout.readlines()
 
     return fOutput
