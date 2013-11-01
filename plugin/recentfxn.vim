@@ -173,3 +173,18 @@ nnoremap <F3> :call MRUFunction()<CR>
 
 autocmd InsertLeave *.py :call LogTagLocationInfo()
 autocmd InsertLeave *.vim :call LogTagLocationInfo()
+autocmd InsertLeave *.js :call LogTagLocationInfo()
+
+autocmd InsertLeave *.c :call LogTagLocationInfo()
+autocmd InsertLeave *.c++ :call LogTagLocationInfo()
+autocmd InsertLeave *.cc :call LogTagLocationInfo()
+autocmd InsertLeave *.cs :call LogTagLocationInfo()
+autocmd InsertLeave *.cs :call LogTagLocationInfo()
+autocmd InsertLeave *.earl :call LogTagLocationInfo()
+autocmd InsertLeave *.go :call LogTagLocationInfo()
+autocmd InsertLeave *.java :call LogTagLocationInfo()
+autocmd InsertLeave *.pl :call LogTagLocationInfo()
+autocmd InsertLeave *.pl :call LogTagLocationInfo()
+autocmd InsertLeave *.rb :call LogTagLocationInfo()
+autocmd InsertLeave *.ruby :call LogTagLocationInfo()
+autocmd InsertLeave *.sh :call LogTagLocationInfo()
